@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fire and Smoke Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f5f5f5;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        #upload-form {
+            margin-top: 20px;
+        }
+        #output {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #fff;
+            width: 90%;
+            max-width: 800px;
+        }
+        #detection-results {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #fff;
+            width: 90%;
+            max-width: 800px;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: space-between;
+        }
+        .result-info {
+            width: 45%;
+        }
+        .result-info h3 {
+            margin-top: 0;
+        }
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .result-table th, .result-table td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            text-align: left;
+        }
+        .result-table th {
+            background-color: #eee;
+        }
+        #camera-toggle {
+            margin-top: 20px;
+        }
+        #video-feed {
+            margin-top: 20px;
+            max-width: 800px;
+            border: 1px solid #ccc;
+            background-color: #000;
+        }
+        .stat {
+            font-size: 1.2em;
+            color: #d9534f;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fire and Smoke Detection</h1>
+    <form id="upload-form">
+        <input type="file" id="file-input" accept="image/*,video/*">
+        <button type="submit">Upload</button>
+    </form>
+    <div id="output">
+        <!-- Output from the detection will be inserted here -->
+    </div>
+
+    <div id="detection-results">
+        <div class="result-info">
+            <h3>检测结果</h3>
+            <p><span class="stat">用时：</span> <span id="detection-time">0.000</span> 秒</p>
+            <p><span class="stat">目标数量：</span> <span id="object-count">0</span></p>
+            <p><span class="stat">类型：</span> <span id="object-type">N/A</span></p>
+            <p><span class="stat">置信度：</span> <span id="confidence">0.00</span>%</p>
+        </div>
+        <div class="result-info">
+            <h3>目标位置</h3>
+            <table class="result-table">
+                <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>类别</th>
+                        <th>置信度</th>
+                        <th>坐标位置</th>
+                    </tr>
+                </thead>
+                <tbody id="result-details">
+                    <!-- Detection details will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <h2>Live Camera Feed</h2>
+    <button id="camera-toggle">Turn Off Camera</button>
+    <img id="video-feed" src="/video_feed">
+
+    <script>
+        let cameraOn = true;
+
+        document.getElementById('camera-toggle').addEventListener('click', function() {
+            const videoFeed = document.getElementById('video-feed');
+
+            if (cameraOn) {
+                fetch('/stop_video').then(response => {
+                    if (response.ok) {
+                        videoFeed.src = '';
+                        cameraOn = false;
+                        document.getElementById('camera-toggle').textContent = 'Turn On Camera';
+                    }
+                });
+            } else {
+                fetch('/start_video').then(response => {
+                    if (response.ok) {
+                        videoFeed.src = '/video_feed';
+                        cameraOn = true;
+                        document.getElementById('camera-toggle').textContent = 'Turn Off Camera';
+                    }
+                });
+            }
+        });
+
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('file-input');
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await response.json();
+            const output = document.getElementById('output');
+            const imgTag = `<img src="data:image/jpeg;base64,${data.image}" style="max-width:100%;">`;
+            output.innerHTML = imgTag;
+
+            // Update detection results
+            document.getElementById('detection-time').textContent = data.time;
+            document.getElementById('object-count').textContent = data.count;
+            document.getElementById('object-type').textContent = data.type;
+            document.getElementById('confidence').textContent = data.confidence;
+
+            const resultDetails = data.results.map((result, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${result.category}</td>
+                    <td>${result.confidence}%</td>
+                    <td>[${result.coordinates.join(', ')}]</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('result-details').innerHTML = resultDetails;
+        });
+    </script>
+</body>
+</html>

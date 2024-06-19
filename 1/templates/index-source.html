@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fire Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #output {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fire and Smoke Detection</h1>
+    <form id="upload-form">
+        <input type="file" id="file-input" accept="image/*,video/*">
+        <button type="submit">Upload</button>
+    </form>
+    <div id="output"></div>
+    <h2>Live Camera Feed</h2>
+    <button id="camera-toggle">Toggle Camera</button>
+    <img id="video-feed" src="/video_feed">
+    
+    <script>
+        var cameraOn = true;
+
+        document.getElementById('camera-toggle').addEventListener('click', function() {
+        var videoFeed = document.getElementById('video-feed');
+
+        if (cameraOn) {
+        // Turn off the camera by changing the src to a blank image
+        videoFeed.src = '/path/to/blank/image.jpg';
+        } else {
+        // Turn on the camera by changing the src back to the video feed
+        videoFeed.src = '/video_feed';
+        }
+
+        // Toggle the cameraOn variable
+        cameraOn = !cameraOn;
+    });
+
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('file-input');
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData,
+            });
+            const data = await response.json();
+            const output = document.getElementById('output');
+            output.innerHTML = `<img src="data:image/jpeg;base64,${data.image}">`;
+        });
+    </script>
+</body>
+</html>
+
