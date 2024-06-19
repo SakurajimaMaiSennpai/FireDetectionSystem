@@ -5,7 +5,7 @@ import numpy as np
 import base64
 
 app = Flask(__name__)
-model = YOLO('C:/Users/yx948/Desktop/1/best-yolov8.pt')
+model = YOLO('1/best-yolov8.pt')
 
 @app.route('/')
 def index():
